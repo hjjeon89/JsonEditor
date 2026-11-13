@@ -1,0 +1,998 @@
+<Window x:Class="JsonEditor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:JsonEditor.ViewModels"
+        xmlns:models="clr-namespace:JsonEditor.Models"
+        xmlns:services="clr-namespace:JsonEditor.Services"
+        mc:Ignorable="d"
+        Title="Universal JSON Editor &amp; Format/Duplicate Inspector"
+        Width="1540"
+        Height="920"
+        MinWidth="1100"
+        MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource DjiCanvasSoftBrush}"
+        FontFamily="{StaticResource DjiFontFamily}"
+        AllowDrop="True"
+        Drop="Window_Drop"
+        DragOver="Window_DragOver">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- Row 0: Announcement & Diagnostic Status Bar (#fafafa) -->
+            <RowDefinition Height="Auto" />
+            <!-- Row 1: Main White Navigation Bar (#ffffff, 64px) -->
+            <RowDefinition Height="64" />
+            <!-- Row 2: View Mode Tabs & Live Diagnostic Counters (#ffffff, 44px) -->
+            <RowDefinition Height="44" />
+            <!-- Row 3: Main 3-Pane Resizable Workspace (#f7f9fa) -->
+            <RowDefinition Height="*" />
+            <!-- Row 4: Sticky Bottom Action Bar (#ffffff, 66px) -->
+            <RowDefinition Height="66" />
+        </Grid.RowDefinitions>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             ROW 0: ANNOUNCEMENT & DIAGNOSTIC STATUS BAR (DESIGN-dji.md)
+             ═══════════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="{StaticResource DjiAnnounceBrush}"
+                BorderBrush="{StaticResource DjiHairlineBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="22,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Dynamic Status Pill -->
+                    <Border CornerRadius="4"
+                            Padding="7,2"
+                            Margin="0,0,10,0"
+                            VerticalAlignment="Center">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{StaticResource DjiSuccessGreenBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasFormatWarning}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource DjiBadgeOrangeBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding HasParseError}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource DjiErrorBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding InspectorBannerTitle}"
+                                   Foreground="White"
+                                   FontSize="10.5"
+                                   FontWeight="SemiBold" />
+                    </Border>
+
+                    <TextBlock Text="{Binding StatusMessage}"
+                               Foreground="{StaticResource DjiInkBrush}"
+                               FontSize="12"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Quick File Switcher Pills (Same Folder JSONs) -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="현재 폴더 JSON:"
+                               Foreground="{StaticResource DjiInkSecondaryBrush}"
+                               FontSize="11.5"
+                               VerticalAlignment="Center"
+                               Margin="0,0,6,0" />
+                    <ItemsControl ItemsSource="{Binding QuickFiles}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:QuickFilePreset}">
+                                <Button Content="{Binding DisplayName}"
+                                        Style="{StaticResource DjiSoftPillButton}"
+                                        Padding="9,2.5"
+                                        FontSize="11"
+                                        Margin="0,0,4,0"
+                                        ToolTip="{Binding FullPath}"
+                                        Command="{Binding DataContext.LoadQuickFileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             ROW 1: WHITE NAVIGATION BAR (nav-bar from DESIGN-dji.md)
+             ═══════════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="1"
+                Background="{StaticResource DjiCanvasBrush}"
+                BorderBrush="{StaticResource DjiHairlineBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="22,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Brand Wordmark + Active File Pill -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="JSON EDITOR"
+                               Foreground="{StaticResource DjiInkBrush}"
+                               FontSize="21"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="FORMAT &amp; DUP INSPECTOR"
+                               Foreground="{StaticResource DjiTierOrangeBrush}"
+                               FontSize="10.5"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Top"
+                               Margin="6,18,14,0" />
+
+                    <Border Background="{StaticResource DjiFogBrush}"
+                            CornerRadius="15"
+                            Padding="12,5"
+                            VerticalAlignment="Center"
+                            ToolTip="{Binding CurrentFilePath}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="파일:"
+                                       Foreground="{StaticResource DjiInkSecondaryBrush}"
+                                       FontSize="12"
+                                       Margin="0,0,5,0" />
+                            <TextBlock Text="{Binding CurrentFileName}"
+                                       Foreground="{StaticResource DjiInkBrush}"
+                                       FontSize="12.5"
+                                       FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Search Bar -->
+                <Border Grid.Column="1"
+                        Background="{StaticResource DjiFogBrush}"
+                        BorderBrush="{StaticResource DjiInputBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="18"
+                        Height="35"
+                        MaxWidth="360"
+                        Margin="16,0"
+                        Padding="14,0"
+                        VerticalAlignment="Center">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="트리 검색"
+                                   Foreground="{StaticResource DjiInkTertiaryBrush}"
+                                   FontSize="11.5"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0" />
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 VerticalContentAlignment="Center"
+                                 FontSize="13"
+                                 Foreground="{StaticResource DjiInkBrush}"
+                                 ToolTip="키 이름(Key) 또는 값(Value)을 검색하여 트리에서 하이라이트 및 자동 펼침합니다." />
+                        <Button Grid.Column="2"
+                                Content="지우기"
+                                Style="{StaticResource DjiSoftPillButton}"
+                                Padding="7,2"
+                                FontSize="10.5"
+                                VerticalAlignment="Center"
+                                Command="{Binding ClearSearchCommand}" />
+                    </Grid>
+                </Border>
+
+                <!-- Top Right Actions -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="JSON 포맷 정밀 검사"
+                            Style="{StaticResource DjiOutlinePillButton}"
+                            Command="{Binding RunFormatCheckCommand}"
+                            ToolTip="문법 오류, 역슬래시(\) 이스케이프 누락, 후행 쉼표, 배열 타입 불일치 및 중복을 통합 검사합니다."
+                            Margin="0,0,6,0" />
+
+                    <Button Content="중복 검사 (Duplicate)"
+                            Style="{StaticResource DjiOutlinePillButton}"
+                            BorderBrush="{StaticResource DjiStoreBlueBrush}"
+                            Foreground="{StaticResource DjiStoreBlueBrush}"
+                            FontWeight="SemiBold"
+                            Command="{Binding RunDuplicateCheckCommand}"
+                            ToolTip="동일 객체 내 중복 키, 배열 내 완전 중복 원소, 배열 내 고유 식별자(ID/Index/No/FaultCode 등) 중복, 동일 객체 내 속성값 중복을 정밀 검사합니다."
+                            Margin="0,0,6,0" />
+
+                    <Button Content="자동 교정 및 정렬 (Auto-Fix)"
+                            Style="{StaticResource DjiStoreCartPillButton}"
+                            Command="{Binding AutoFixFormatCommand}"
+                            ToolTip="후행 쉼표 제거, 경로 역슬래시(\\) 자동 이스케이프, 중복 키 정리, 대소문자 불리언 오타 교정 및 표준 들여쓰기 정렬을 수행합니다."
+                            Margin="0,0,6,0" />
+
+                    <Button Content="새 문서"
+                            Style="{StaticResource DjiOutlinePillButton}"
+                            Command="{Binding NewDocumentCommand}"
+                            Margin="0,0,6,0" />
+
+                    <Button Content="다시 불러오기"
+                            Style="{StaticResource DjiOutlinePillButton}"
+                            Command="{Binding ReloadFileCommand}"
+                            Margin="0,0,6,0" />
+
+                    <Button Content="파일 열기..."
+                            Style="{StaticResource DjiPrimaryPillButton}"
+                            Command="{Binding OpenFileCommand}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             ROW 2: VIEW MODE TABS & DIAGNOSTIC COUNTERS (comparison-tabs)
+             ═══════════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="2"
+                Background="{StaticResource DjiCanvasBrush}"
+                BorderBrush="{StaticResource DjiDividerBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="22,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <!-- Tab 1: Split View -->
+                    <Grid Margin="0,0,24,0">
+                        <Button Command="{Binding SwitchViewModeCommand}"
+                                CommandParameter="Split"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Cursor="Hand"
+                                Padding="4,8">
+                            <TextBlock Text="분할 뷰 (구조화 트리 + 안전 편집기 + JSON 원문/검사기)"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource DjiInkBrush}" />
+                        </Button>
+                        <Border Height="2.5"
+                                VerticalAlignment="Bottom"
+                                Background="{StaticResource DjiInkBrush}"
+                                Visibility="{Binding IsSplitView, Converter={StaticResource BoolToVis}}" />
+                    </Grid>
+
+                    <!-- Tab 2: Structured Only -->
+                    <Grid Margin="0,0,24,0">
+                        <Button Command="{Binding SwitchViewModeCommand}"
+                                CommandParameter="Structured"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Cursor="Hand"
+                                Padding="4,8">
+                            <TextBlock Text="구조화 트리 &amp; 안전 편집기 전용 뷰"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource DjiInkBrush}" />
+                        </Button>
+                        <Border Height="2.5"
+                                VerticalAlignment="Bottom"
+                                Background="{StaticResource DjiInkBrush}"
+                                Visibility="{Binding IsStructuredOnlyView, Converter={StaticResource BoolToVis}}" />
+                    </Grid>
+
+                    <!-- Tab 3: Raw Code & Format Inspector Only -->
+                    <Grid Margin="0,0,24,0">
+                        <Button Command="{Binding SwitchViewModeCommand}"
+                                CommandParameter="RawCode"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Cursor="Hand"
+                                Padding="4,8">
+                            <TextBlock Text="JSON 원문 코드 &amp; 포맷/중복 검사기 전용 뷰"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource DjiPrimaryBrush}" />
+                        </Button>
+                        <Border Height="2.5"
+                                VerticalAlignment="Bottom"
+                                Background="{StaticResource DjiPrimaryBrush}"
+                                Visibility="{Binding IsRawCodeOnlyView, Converter={StaticResource BoolToVis}}" />
+                    </Grid>
+                </StackPanel>
+
+                <!-- Right: Live Inspection Summary Badges -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="{StaticResource DjiErrorTintBrush}"
+                            BorderBrush="{StaticResource DjiErrorBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="10,2"
+                            Margin="0,0,8,0">
+                        <TextBlock Text="{Binding ErrorCount, StringFormat='파싱/문법 오류: {0}건'}"
+                                   Foreground="{StaticResource DjiErrorBrush}"
+                                   FontSize="11.5"
+                                   FontWeight="SemiBold" />
+                    </Border>
+
+                    <Border Background="{StaticResource DjiWarningTintBrush}"
+                            BorderBrush="{StaticResource DjiBadgeOrangeBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="10,2"
+                            Margin="0,0,8,0">
+                        <TextBlock Text="{Binding WarningCount, StringFormat='포맷/규격 주의: {0}건'}"
+                                   Foreground="{StaticResource DjiTierOrangeBrush}"
+                                   FontSize="11.5"
+                                   FontWeight="SemiBold" />
+                    </Border>
+
+                    <Button Command="{Binding RunDuplicateCheckCommand}"
+                            Cursor="Hand"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="0"
+                            ToolTip="클릭하여 중복 검사 결과 필터링">
+                        <Border Background="{StaticResource DjiStoreBlueTintBrush}"
+                                BorderBrush="{StaticResource DjiStoreBlueBrush}"
+                                BorderThickness="1"
+                                CornerRadius="12"
+                                Padding="10,2">
+                            <TextBlock Text="{Binding DuplicateCount, StringFormat='중복 감지: {0}건'}"
+                                       Foreground="{StaticResource DjiStoreBlueBrush}"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold" />
+                        </Border>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             ROW 3: MAIN 3-PANE RESIZABLE WORKSPACE
+             (Col 0: Tree | Col 1: Splitter 1 | Col 2: Safe Editor | Col 3: Splitter 2 | Col 4: Raw JSON & Inspector)
+             ═══════════════════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="3" Margin="18,14">
+            <Grid.ColumnDefinitions>
+                <!-- Col 0: 데이터 구조 트리 (JSON Hierarchy Tree) -->
+                <ColumnDefinition x:Name="TreeColumn" Width="310" MinWidth="180" />
+                <!-- Col 1: Splitter between Tree and Structured Safe Editor -->
+                <ColumnDefinition x:Name="TreeEditorSplitterColumn" Width="12" />
+                <!-- Col 2: STRUCTURED SAFE EDITOR -->
+                <ColumnDefinition x:Name="SafeEditorColumn" Width="1.25*" MinWidth="260" />
+                <!-- Col 3: Splitter between Structured Safe Editor and Raw JSON -->
+                <ColumnDefinition x:Name="EditorRawSplitterColumn" Width="12" />
+                <!-- Col 4: RAW JSON SOURCE & FORMAT/DUPLICATE INSPECTOR -->
+                <ColumnDefinition x:Name="RawJsonColumn" Width="1*" MinWidth="260" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ───────────────────────────────────────────────────────────────
+                 PANE 1 (Col 0): JSON STRUCTURE TREE EXPLORER
+                 ─────────────────────────────────────────────────────────────── -->
+            <Border Grid.Column="0"
+                    Visibility="{Binding ShowStructuredPane, Converter={StaticResource BoolToVis}}"
+                    Background="{StaticResource DjiCanvasBrush}"
+                    BorderBrush="{StaticResource DjiCardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="JSON HIERARCHY"
+                                       Foreground="{StaticResource DjiTierOrangeBrush}"
+                                       FontSize="10"
+                                       FontWeight="SemiBold" />
+                            <TextBlock Text="데이터 구조 트리"
+                                       Foreground="{StaticResource DjiInkBrush}"
+                                       FontSize="15"
+                                       FontWeight="SemiBold" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="펼치기"
+                                    Style="{StaticResource DjiSoftPillButton}"
+                                    Padding="8,2"
+                                    FontSize="11"
+                                    Command="{Binding ExpandAllCommand}"
+                                    Margin="0,0,4,0" />
+                            <Button Content="접기"
+                                    Style="{StaticResource DjiSoftPillButton}"
+                                    Padding="8,2"
+                                    FontSize="11"
+                                    Command="{Binding CollapseAllCommand}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <TreeView Grid.Row="1"
+                              ItemsSource="{Binding RootNodes}"
+                              BorderThickness="0"
+                              Background="Transparent"
+                              SelectedItemChanged="TreeView_SelectedItemChanged">
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem">
+                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                                <Setter Property="Padding" Value="3,2" />
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate DataType="{x:Type models:JsonTreeNode}"
+                                                      ItemsSource="{Binding Children}">
+                                <StackPanel Orientation="Horizontal" Margin="0,1">
+                                    <!-- Modified Indicator Dot -->
+                                    <Ellipse Width="6"
+                                             Height="6"
+                                             Fill="{StaticResource DjiBadgeOrangeBrush}"
+                                             VerticalAlignment="Center"
+                                             Margin="0,0,5,0"
+                                             Visibility="{Binding IsModified, Converter={StaticResource BoolToVis}}" />
+
+                                    <TextBlock Text="{Binding TypeBadge}"
+                                               Foreground="{StaticResource DjiTierOrangeBrush}"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,6,0" />
+
+                                    <TextBlock Text="{Binding DisplayTitle}"
+                                               Foreground="{StaticResource DjiInkBrush}"
+                                               FontFamily="{StaticResource DjiMonoFontFamily}"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center" />
+
+                                    <TextBlock Text="{Binding ValuePreview, StringFormat=' : {0}'}"
+                                               Foreground="{StaticResource DjiInkTertiaryBrush}"
+                                               FontFamily="{StaticResource DjiMonoFontFamily}"
+                                               FontSize="11"
+                                               MaxWidth="140"
+                                               TextTrimming="CharacterEllipsis"
+                                               VerticalAlignment="Center"
+                                               Visibility="{Binding IsScalar, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                </Grid>
+            </Border>
+
+            <!-- ───────────────────────────────────────────────────────────────
+                 SPLITTER 1 (Col 1): Tree Explorer ↔ Structured Safe Editor
+                 ─────────────────────────────────────────────────────────────── -->
+            <GridSplitter x:Name="TreeEditorSplitter"
+                          Grid.Column="1"
+                          Style="{StaticResource DjiVerticalGridSplitter}"
+                          ResizeDirection="Columns"
+                          ResizeBehavior="PreviousAndNext"
+                          ShowsPreview="False"
+                          Visibility="{Binding ShowStructuredPane, Converter={StaticResource BoolToVis}}"
+                          ToolTip="좌우로 드래그하여 데이터 구조 트리와 안전 편집기의 너비를 조절합니다." />
+
+            <!-- ───────────────────────────────────────────────────────────────
+                 PANE 2 (Col 2): CENTER STRUCTURED SAFE EDITOR
+                 ─────────────────────────────────────────────────────────────── -->
+            <Border Grid.Column="2"
+                    Visibility="{Binding ShowStructuredPane, Converter={StaticResource BoolToVis}}"
+                    Background="{StaticResource DjiCanvasBrush}"
+                    BorderBrush="{StaticResource DjiCardBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="16,14">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Active Container Breadcrumb & Actions -->
+                    <Border Grid.Row="0"
+                            BorderBrush="{StaticResource DjiDividerBrush}"
+                            BorderThickness="0,0,0,1"
+                            Padding="0,0,0,12"
+                            Margin="0,0,0,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="STRUCTURED SAFE EDITOR"
+                                               Foreground="{StaticResource DjiTierOrangeBrush}"
+                                               FontSize="10.5"
+                                               FontWeight="SemiBold"
+                                               Margin="0,0,8,0" />
+                                    <TextBlock Text="{Binding ActiveContainerNode.JsonPath}"
+                                               Foreground="{StaticResource DjiStoreBlueBrush}"
+                                               FontFamily="{StaticResource DjiMonoFontFamily}"
+                                               FontSize="11.5"
+                                               FontWeight="SemiBold" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding ActiveContainerNode.DisplayTitle}"
+                                           Foreground="{StaticResource DjiInkBrush}"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Margin="0,2,0,2" />
+                                <TextBlock Text="구조화 편집기에서 값을 수정하면 따옴표, 쉼표, 역슬래시(\\) 이스케이프가 자동으로 처리되어 파싱 에러가 원천 방지됩니다."
+                                           Foreground="{StaticResource DjiInkSecondaryBrush}"
+                                           FontSize="11.5"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="▲ 상위 노드로"
+                                        Style="{StaticResource DjiSoftPillButton}"
+                                        Command="{Binding NavigateUpCommand}"
+                                        Margin="0,0,6,0" />
+                                <Button Content="+ 배열 원소 복제 추가"
+                                        Style="{StaticResource DjiPrimaryPillButton}"
+                                        Padding="14,5"
+                                        Command="{Binding ActiveContainerNode.AddArrayItemCommand}"
+                                        Visibility="{Binding IsActiveContainerArray, Converter={StaticResource BoolToVis}}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Add New Property Bar (when ActiveContainerNode is an Object) -->
+                    <Border Grid.Row="1"
+                            Background="{StaticResource DjiPanelBrush}"
+                            BorderBrush="{StaticResource DjiDividerBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,8"
+                            Margin="0,0,0,12"
+                            Visibility="{Binding IsActiveContainerObject, Converter={StaticResource BoolToVis}}">
+                        <WrapPanel VerticalAlignment="Center">
+                            <TextBlock Text="현재 객체에 새 속성 추가:"
+                                       Foreground="{StaticResource DjiInkSecondaryBrush}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,10,0" />
+                            <TextBlock Text="키(Key):" VerticalAlignment="Center" FontSize="11.5" Margin="0,0,4,0" />
+                            <TextBox Width="130"
+                                     Style="{StaticResource DjiInputTextBox}"
+                                     Text="{Binding NewPropKey, UpdateSourceTrigger=PropertyChanged}"
+                                     Margin="0,0,8,0" />
+                            <TextBlock Text="타입:" VerticalAlignment="Center" FontSize="11.5" Margin="0,0,4,0" />
+                            <ComboBox Width="95"
+                                      ItemsSource="{Binding AvailableNodeTypes}"
+                                      SelectedItem="{Binding NewPropType}"
+                                      VerticalContentAlignment="Center"
+                                      Margin="0,0,8,0" />
+                            <TextBlock Text="값:" VerticalAlignment="Center" FontSize="11.5" Margin="0,0,4,0" />
+                            <TextBox Width="120"
+                                     Style="{StaticResource DjiInputTextBox}"
+                                     Text="{Binding NewPropValue, UpdateSourceTrigger=PropertyChanged}"
+                                     Margin="0,0,8,0" />
+                            <Button Content="+ 속성 추가"
+                                    Style="{StaticResource DjiSoftPillButton}"
+                                    Foreground="{StaticResource DjiPrimaryBrush}"
+                                    FontWeight="SemiBold"
+                                    Command="{Binding AddPropertyToActiveObjectCommand}" />
+                        </WrapPanel>
+                    </Border>
+
+                    <!-- Scrollable List of Child Nodes in ActiveContainerNode -->
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,4,0">
+                        <StackPanel>
+                            <!-- Focused Scalar Node Card (if user clicked a leaf property in TreeView) -->
+                            <Border Background="#F0F7FF"
+                                    BorderBrush="{StaticResource DjiStoreBlueBrush}"
+                                    BorderThickness="1.5"
+                                    CornerRadius="8"
+                                    Padding="12,10"
+                                    Margin="0,0,0,12"
+                                    Visibility="{Binding IsSelectedScalar, Converter={StaticResource BoolToVis}}">
+                                <StackPanel>
+                                    <TextBlock Text="현재 트리에서 선택한 속성"
+                                               Foreground="{StaticResource DjiStoreBlueBrush}"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Margin="0,0,0,6" />
+                                    <ContentControl Content="{Binding SelectedNode}"
+                                                    ContentTemplate="{StaticResource JsonNodeEditorCardTemplate}" />
+                                </StackPanel>
+                            </Border>
+
+                            <ItemsControl ItemsSource="{Binding ActiveContainerNode.Children}"
+                                          ItemTemplate="{StaticResource JsonNodeEditorCardTemplate}" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- ───────────────────────────────────────────────────────────────
+                 SPLITTER 2 (Col 3): Structured Safe Editor ↔ Raw JSON Source
+                 ─────────────────────────────────────────────────────────────── -->
+            <GridSplitter x:Name="EditorRawSplitter"
+                          Grid.Column="3"
+                          Style="{StaticResource DjiVerticalGridSplitter}"
+                          ResizeDirection="Columns"
+                          ResizeBehavior="PreviousAndNext"
+                          ShowsPreview="False"
+                          Visibility="{Binding IsSplitView, Converter={StaticResource BoolToVis}}"
+                          ToolTip="좌우로 드래그하여 안전 편집기와 JSON 원문 에디터의 너비를 조절합니다." />
+
+            <!-- ───────────────────────────────────────────────────────────────
+                 PANE 3 (Col 4): LIVE RAW JSON EDITOR + FORMAT/DUPLICATE REPORT
+                 ─────────────────────────────────────────────────────────────── -->
+            <Grid Grid.Column="4" Visibility="{Binding ShowRawCodePane, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="160" />
+                    <RowDefinition Height="12" />
+                    <RowDefinition Height="260" MinHeight="120" />
+                </Grid.RowDefinitions>
+
+                <!-- TOP: LIVE RAW JSON CODE EDITOR -->
+                <Border Grid.Row="0"
+                        Background="{StaticResource DjiFooterBrush}"
+                        CornerRadius="8"
+                        Padding="16,14">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="RAW JSON SOURCE &amp; LIVE LINTER"
+                                           Foreground="{StaticResource DjiBadgeOrangeBrush}"
+                                           FontSize="10.5"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="JSON 원문 에디터 (실시간 문법/중복 검사)"
+                                           Foreground="White"
+                                           FontSize="15"
+                                           FontWeight="SemiBold" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="원문 → 트리 반영"
+                                        Style="{StaticResource DjiSoftPillButton}"
+                                        Command="{Binding SyncTextToTreeCommand}"
+                                        ToolTip="원문 에디터에서 직접 수정한 JSON 텍스트를 좌측 구조 트리에 반영합니다."
+                                        Margin="0,0,6,0" />
+                                <Button Content="중복 검사"
+                                        Style="{StaticResource DjiSoftPillButton}"
+                                        Command="{Binding RunDuplicateCheckCommand}"
+                                        ToolTip="현재 JSON 문서의 중복 키/원소/식별자/값을 검사합니다."
+                                        Margin="0,0,6,0" />
+                                <Button Content="포맷 자동 교정"
+                                        Style="{StaticResource DjiPrimaryPillButton}"
+                                        Padding="12,4"
+                                        FontSize="11.5"
+                                        Command="{Binding AutoFixFormatCommand}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Code Editor with Line Numbers -->
+                        <Border Grid.Row="1"
+                                Background="#1E1E1E"
+                                BorderBrush="#414141"
+                                BorderThickness="1"
+                                CornerRadius="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="48" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Line Number Gutter -->
+                                <ScrollViewer x:Name="LineNumberScrollViewer"
+                                              Grid.Column="0"
+                                              VerticalScrollBarVisibility="Hidden"
+                                              HorizontalScrollBarVisibility="Hidden"
+                                              Background="#252526"
+                                              Padding="4,10,8,10">
+                                    <TextBlock Text="{Binding LineNumbersText}"
+                                               Foreground="#858585"
+                                               FontFamily="{StaticResource DjiMonoFontFamily}"
+                                               FontSize="12.5"
+                                               TextAlignment="Right" />
+                                </ScrollViewer>
+
+                                <!-- Raw JSON TextBox -->
+                                <TextBox x:Name="RawJsonTextBox"
+                                         Grid.Column="1"
+                                         Text="{Binding RawJsonText, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True"
+                                         AcceptsTab="True"
+                                         Background="#1E1E1E"
+                                         Foreground="#E8E8E8"
+                                         CaretBrush="White"
+                                         BorderThickness="0"
+                                         FontFamily="{StaticResource DjiMonoFontFamily}"
+                                         FontSize="12.5"
+                                         Padding="10"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Auto"
+                                         ScrollViewer.ScrollChanged="RawJsonTextBox_ScrollChanged" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- HORIZONTAL SPLITTER: Raw JSON Editor ↔ Diagnostic Report -->
+                <GridSplitter Grid.Row="1"
+                              Style="{StaticResource DjiHorizontalGridSplitter}"
+                              ResizeDirection="Rows"
+                              ResizeBehavior="PreviousAndNext"
+                              ShowsPreview="False"
+                              ToolTip="상하로 드래그하여 JSON 원문 에디터와 검사 리포트의 높이를 조절합니다." />
+
+                <!-- BOTTOM: JSON FORMAT, SYNTAX & DUPLICATE DIAGNOSTIC REPORT -->
+                <Border Grid.Row="2"
+                        Background="{StaticResource DjiCanvasBrush}"
+                        BorderBrush="{StaticResource DjiCardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="16,12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="JSON 포맷 · 문법 · 중복 검사 리포트"
+                                           Foreground="{StaticResource DjiInkBrush}"
+                                           FontSize="13.5"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,8,0" />
+                                <TextBlock Text="(클릭 시 해당 줄 &amp; 트리 노드로 이동)"
+                                           Foreground="{StaticResource DjiInkTertiaryBrush}"
+                                           FontSize="11"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <!-- Filter Pills: All / Format / Duplicates -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="전체 보기"
+                                        Style="{StaticResource DjiSoftPillButton}"
+                                        Padding="8,2"
+                                        FontSize="11"
+                                        Command="{Binding SetDiagnosticFilterCommand}"
+                                        CommandParameter="All"
+                                        Margin="0,0,4,0" />
+                                <Button Content="문법/규격만"
+                                        Style="{StaticResource DjiSoftPillButton}"
+                                        Padding="8,2"
+                                        FontSize="11"
+                                        Command="{Binding SetDiagnosticFilterCommand}"
+                                        CommandParameter="FormatOnly"
+                                        Margin="0,0,4,0" />
+                                <Button Content="중복 항목만"
+                                        Style="{StaticResource DjiSoftPillButton}"
+                                        Foreground="{StaticResource DjiStoreBlueBrush}"
+                                        FontWeight="SemiBold"
+                                        Padding="8,2"
+                                        FontSize="11"
+                                        Command="{Binding SetDiagnosticFilterCommand}"
+                                        CommandParameter="DuplicatesOnly" />
+                            </StackPanel>
+                        </Grid>
+
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <!-- Valid Banner when 0 Diagnostics in current filter -->
+                                <Border Background="{StaticResource DjiSuccessTintBrush}"
+                                        BorderBrush="{StaticResource DjiSuccessGreenBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="14,12"
+                                        Visibility="{Binding HasNoDiagnostics, Converter={StaticResource BoolToVis}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="✓"
+                                                   Foreground="{StaticResource DjiSuccessGreenBrush}"
+                                                   FontSize="16"
+                                                   FontWeight="Bold"
+                                                   Margin="0,0,10,0"
+                                                   VerticalAlignment="Center" />
+                                        <StackPanel>
+                                            <TextBlock Text="JSON 포맷 · 문법 · 중복 검사 통과 (감지된 문제 0건)"
+                                                       Foreground="{StaticResource DjiSuccessGreenBrush}"
+                                                       FontSize="13"
+                                                       FontWeight="SemiBold" />
+                                            <TextBlock Text="역슬래시(\\) 이스케이프, 따옴표, 후행 쉼표, 동일 객체 내 중복 키, 배열 내 중복 원소/식별자 모두 정상입니다."
+                                                       Foreground="{StaticResource DjiInkSecondaryBrush}"
+                                                       FontSize="11.5"
+                                                       Margin="0,2,0,0"
+                                                       TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- List of Detected Format / Syntax / Duplicate Items -->
+                                <ItemsControl ItemsSource="{Binding FilteredDiagnostics}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type services:JsonDiagnosticItem}">
+                                            <Button Click="DiagnosticItem_Click"
+                                                    Tag="{Binding}"
+                                                    Cursor="Hand"
+                                                    HorizontalContentAlignment="Stretch"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    Padding="0"
+                                                    Margin="0,0,0,6">
+                                                <Border x:Name="diagBorder"
+                                                        Background="{StaticResource DjiWarningTintBrush}"
+                                                        BorderBrush="{StaticResource DjiBadgeOrangeBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="6"
+                                                        Padding="12,8">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <Border x:Name="sevPill"
+                                                                Grid.Column="0"
+                                                                Background="{StaticResource DjiBadgeOrangeBrush}"
+                                                                CornerRadius="4"
+                                                                Padding="6,2"
+                                                                VerticalAlignment="Top"
+                                                                Margin="0,1,10,0">
+                                                            <TextBlock Text="{Binding SeverityBadge}"
+                                                                       Foreground="White"
+                                                                       FontSize="10"
+                                                                       FontWeight="SemiBold" />
+                                                        </Border>
+
+                                                        <StackPanel Grid.Column="1">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{Binding LocationBadge}"
+                                                                           FontFamily="{StaticResource DjiMonoFontFamily}"
+                                                                           FontWeight="Bold"
+                                                                           FontSize="12"
+                                                                           Foreground="{StaticResource DjiInkBrush}"
+                                                                           Margin="0,0,8,0" />
+                                                                <TextBlock Text="{Binding Title}"
+                                                                           FontWeight="SemiBold"
+                                                                           FontSize="12.5"
+                                                                           Foreground="{StaticResource DjiInkBrush}" />
+                                                            </StackPanel>
+                                                            <TextBlock Text="{Binding Description}"
+                                                                       Foreground="{StaticResource DjiInkSecondaryBrush}"
+                                                                       FontSize="11.5"
+                                                                       Margin="0,2,0,0"
+                                                                       TextWrapping="Wrap" />
+                                                        </StackPanel>
+
+                                                        <TextBlock Grid.Column="2"
+                                                                   Text="위치 이동 ›"
+                                                                   Foreground="{StaticResource DjiPrimaryBrush}"
+                                                                   FontSize="11.5"
+                                                                   FontWeight="SemiBold"
+                                                                   VerticalAlignment="Center"
+                                                                   Margin="8,0,0,0" />
+                                                    </Grid>
+                                                </Border>
+                                            </Button>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsInfo}" Value="True">
+                                                    <Setter TargetName="diagBorder" Property="Background" Value="#F0F7FF" />
+                                                    <Setter TargetName="diagBorder" Property="BorderBrush" Value="{StaticResource DjiStoreBlueBrush}" />
+                                                    <Setter TargetName="sevPill" Property="Background" Value="{StaticResource DjiStoreBlueBrush}" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsError}" Value="True">
+                                                    <Setter TargetName="diagBorder" Property="Background" Value="{StaticResource DjiErrorTintBrush}" />
+                                                    <Setter TargetName="diagBorder" Property="BorderBrush" Value="{StaticResource DjiErrorBrush}" />
+                                                    <Setter TargetName="sevPill" Property="Background" Value="{StaticResource DjiErrorBrush}" />
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             ROW 4: STICKY BOTTOM PURCHASE / ACTION BAR (DESIGN-dji.md)
+             ═══════════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="4"
+                Background="{StaticResource DjiCanvasBrush}"
+                BorderBrush="{StaticResource DjiDividerBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="22,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
+                        <TextBlock Text="수정된 노드: "
+                                   Foreground="{StaticResource DjiInkSecondaryBrush}"
+                                   FontSize="13.5"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ModifiedNodeCount}"
+                                   Foreground="{StaticResource DjiInkBrush}"
+                                   FontSize="19"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="개"
+                                   Foreground="{StaticResource DjiInkSecondaryBrush}"
+                                   FontSize="13.5"
+                                   VerticalAlignment="Center"
+                                   Margin="2,0,14,0" />
+
+                        <Border Background="{StaticResource DjiStoreBlueTintBrush}"
+                                CornerRadius="12"
+                                Padding="10,3"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="{Binding InspectorBannerDetail}"
+                                       Foreground="{StaticResource DjiStoreBlueBrush}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold" />
+                        </Border>
+                    </StackPanel>
+
+                    <CheckBox Content="저장 시 원본 백업 파일(.bak) 자동 생성"
+                              IsChecked="{Binding CreateBackupOnSave}"
+                              Foreground="{StaticResource DjiInkSecondaryBrush}"
+                              FontSize="12.5"
+                              VerticalAlignment="Center"
+                              Cursor="Hand" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="전체 초기화"
+                            Style="{StaticResource DjiStoreCartPillButton}"
+                            Command="{Binding RevertAllCommand}"
+                            Margin="0,0,10,0" />
+
+                    <Button Content="다른 이름으로 저장..."
+                            Style="{StaticResource DjiOutlinePillButton}"
+                            Padding="18,8"
+                            Command="{Binding SaveAsFileCommand}"
+                            Margin="0,0,10,0" />
+
+                    <Button Content="JSON 파일 저장하기 (Save)"
+                            Style="{StaticResource DjiStoreBuyPillButton}"
+                            Command="{Binding SaveFileCommand}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>JsonEditor</AssemblyName>
+    <RootNamespace>JsonEditor</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="JsonEditor.Tests\**;build\**" />
+    <EmbeddedResource Remove="JsonEditor.Tests\**;build\**" />
+    <None Remove="JsonEditor.Tests\**;build\**" />
+    <Page Remove="JsonEditor.Tests\**;build\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="LocalConfig_ctrl.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

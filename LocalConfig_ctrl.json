@@ -1,0 +1,262 @@
+{
+  "LocalFileDbName": "rowData.gpd",
+  "driverConfigs": [
+    {
+      "Name": "ControlPC",
+      "Model": "ControlPCDriver",
+      "CommType": 0,
+      "Openresource": "169.254.100.251,1530",
+      "MappingChannel": [
+        0
+      ],
+      "Option": "Server"
+    },
+     {
+      "Name": "Mascon",
+      "Model": "MasconDriver",
+      "CommType": 0,
+      "Openresource": "111.111.111.101,2001,1,111.111.111.133",
+      "MappingChannel": [
+        1
+      ],
+      "Option": "TCP"
+    },
+     {
+      "Name": "Mascon",
+      "Model": "MasconDriver",
+      "CommType": 0,
+      "Openresource": "111.111.111.102,2001,2,111.111.111.133",
+      "MappingChannel": [
+        2
+      ],
+      "Option": "TCP"
+    },
+     {
+      "Name": "Mascon",
+      "Model": "MasconDriver",
+      "CommType": 0,
+      "Openresource": "111.111.111.103,2001,3,111.111.111.133",
+      "MappingChannel": [
+        3
+      ],
+      "Option": "TCP"
+    },
+     {
+      "Name": "Mascon",
+      "Model": "MasconDriver",
+      "CommType": 0,
+      "Openresource": "111.111.111.104,2001,4,111.111.111.133",
+      "MappingChannel": [
+        4
+      ],
+      "Option": "TCP"
+    },
+	  {
+      "Name": "Dio",
+      "Model": "ADAMDIO",
+      "CommType": 0,
+      "Openresource": "111.111.111.151,502",
+      "MappingChannel": [
+        1
+      ],
+      "Option": "1"
+    },
+	{
+      "Name": "DAQVoltage",
+      "Model": "GPCandlelight",
+      "CommType": 0,
+      "Openresource": "DevideId=6&24A517F0&0&0000;Nom=20,11,4;Data=20,5,2",
+      "MappingChannel": [
+        1
+      ],
+      "Option": "1"
+    },
+	{
+	  "Name": "IO",
+	  "Model": "ICPDASIO",
+      "CommType": 0,
+      "Openresource": "111.111.111.171,502,et7218",
+      "MappingChannel": [
+        1
+      ],
+      "Option": "1"
+	},
+	{
+	  "Name": "IO",
+	  "Model": "ICPDASIO",
+      "CommType": 0,
+      "Openresource": "111.111.111.172,502,et7218",
+      "MappingChannel": [
+        1
+      ],
+      "Option": "2"
+	},
+	{
+	  "Name": "PS",
+	  "Model": "Kikusui_PWR",
+      "CommType": 0,
+      "Openresource": "111.111.111.141,5025",
+      "MappingChannel": [
+        1
+      ],
+      "Option": "1"
+    },
+	{
+	  "Name": "Can",
+	  "Model": "VectorCanDriver",
+	  "CommType": 0,
+	  "Openresource": "xlCanGP,500000,CAN",
+	  "MappingChannel": [
+	   1
+	  ],
+	  "Option": "1"
+    },
+	{
+	  "Name": "Can",
+	  "Model": "VectorCanDriver",
+	  "CommType": 0,
+	  "Openresource": "xlCanGP,500000,CAN",
+	  "MappingChannel": [
+	   2
+	  ],
+	  "Option": "2"
+    },
+	{
+	  "Name": "Can",
+	  "Model": "VectorCanDriver",
+	  "CommType": 0,
+	  "Openresource": "xlCanGP,500000,CAN",
+	  "MappingChannel": [
+	   3
+	  ],
+	  "Option": "3"
+    },
+	{
+	  "Name": "Can",
+	  "Model": "VectorCanDriver",
+	  "CommType": 0,
+	  "Openresource": "xlCanGP,500000,CAN",
+	  "MappingChannel": [
+	   4
+	  ],
+	  "Option": "4"
+    },
+	{
+	  "Name": "Chamber",
+	  "Model": "Temi2500Driver",
+	  "CommType": 0,
+	  "Openresource": "COM9,9600,1,temi,chamber",
+	  "MappingChannel":[
+	  	1,2
+	  ],
+	  "Option": "1"
+    },
+	{
+	  "Name": "Chamber",
+	  "Model": "Temi2500Driver",
+	  "CommType": 0,
+	  "Openresource": "COM7,9600,1,temi,chamber",
+	  "MappingChannel":[
+	  	3,4
+	  ],
+	  "Option": "2"
+    },
+	{
+	  "Name": "Chamber",
+	  "Model": "Temi2500Driver",
+	  "CommType": 0,
+	  "Openresource": "COM10,9600,1,temp,chiller",
+	  "MappingChannel":[
+	  	1
+	  ],
+	  "Option": "1"
+    },
+	{
+	  "Name": "Chamber",
+	  "Model": "Temi2500Driver",
+	  "CommType": 0,
+	  "Openresource": "COM11,9600,1,temp,chiller",
+	  "MappingChannel":[
+	  	2
+	  ],
+	  "Option": "2"
+    },	
+	{
+	  "Name": "Chamber",
+	  "Model": "Temi2500Driver",
+	  "CommType": 0,
+	  "Openresource": "COM8,9600,1,temp,chiller",
+	  "MappingChannel":[
+	  	3
+	  ],
+	  "Option": "3"
+    },
+	{
+	  "Name": "Chamber",
+	  "Model": "Temi2500Driver",
+	  "CommType": 0,
+	  "Openresource": "COM12,9600,1,temp,chiller",
+	  "MappingChannel":[
+	  	4
+	  ],
+	  "Option": "4"
+    }
+  ],
+  "ChannelCount": 4,
+  "ConfigPath": "C:\\GreenPower\\GPControl\\Config\\LocalConfig.json",
+  "DriverPath": "D:\\src\\ModulePackCycler\\FactoryLibrary\\DriverDll",
+  "ScheduleFileDir": "C:\\GreenPower\\GPCycler\\Schedule",
+  "SchedulePatternFileDir": "C:\\GreenPower\\GPCycler\\Schedule\\Pattern",
+  "DataParserPath": "C:\\GreenPower\\GPControl\\GpDataParser.exe",
+  "ScheduleEditorPath": "C:\\GreenPower\\External\\ScheduleEditorPro\\ScheduleEditor.exe",
+  "ProcessNameOption": false,
+  "DataAnalyzerPath": "C:\\GreenPower\\External\\CyclerDataAnalyzer\\CyclerDataAnalyzer.exe",
+  "CANDBEditorPath": "C:\\GPCycler\\External\\CANDBEditor\\CANDBEditor.exe",
+  "SystemLogDir": "D:\\Greenpower\\Control_Log\\SystemLog",
+  "SaveDataDir": "D:\\GreenPower\\Data",
+  "CANDBPath": "C:\\GreenPower\\GPCycler\\DB\\candb.xml",
+  "LINDBPath": "C:\\GreenPower\\GPCycler\\DB\\lindb.xml",
+  "DaqConfigPath": "D:\\GreenPower\\DAQ\\DaqConfig.json",
+  "DioConfigPath": "C:\\GreenPower\\GPControl\\Config\\DioConfig.json",
+  "ReserveScheduleFilePath": "C:\\GreenPower\\GPCycler\\ReserveProc\\ReserveSchedule.json",
+  "ChaDischaCalibrationConfigPath": "C:\\GreenPower\\GPCycler\\Cycler\\Config\\ChaDischaCalibrationConfig.json",
+  "ChaDisChaCalibrationDataPath": "C:\\GreenPower\\GPCycler\\CalibrationData",
+  "DaqCalibrationConfigPath": "C:\\GreenPower\\GPCycler\\Cycler\\Config\\DaqCalibrationConfig.json",  
+  "Database": 0,
+  "DatabaseSource": "",
+  "DataServerAddr": "",
+  "IsSimulationOn": false,
+  "LogOption": true,
+  "ParallelChannels": [],
+  "ParallelType": 3,
+  "ControlFaultRange": 500.0,
+  "MasconCommTimeOut_ms": 5000,
+  "EquipmentVoltage": 1000.0,
+  "EquipmentCurrent": 1000.0,
+  "PowerRelayMode": false,
+  "powerRelays": [],
+  "MasconDebugLog": false,
+  "ScheduleFinishChamberOff": false,
+  "DAQCANDBPath": "D:\\GreenPower\\DAQ\\DAQ.xml",
+  "AlarmConfigPath": "C:\\GreenPower\\GPControl\\Config\\AlarmConfig.json",
+  "UseLin": false,
+  "InfluxPath": "C:\\GreenPower\\GPControl\\Config\\influxdb\\StartRun.bat",
+  "InfluxdbUse": true,
+  "IsControlPC": true,
+  "Token": "GoTSJaV6GtKjnQeam9lO0bcoysM4S7f9kjlq9xRihru3Ad60P9imygnVaXv7-JTEy48ItQ1xMNYt0k6nU4-UNw==",
+  "AutoStart": false,
+  "NtcConfigPath": "D:\\GreenPower\\DAQ\\NtcConfig.json",
+  "EOLMode": false,
+  "languageType": 0,
+  "PauseLogTime": 60,
+  "UseBMS": true,
+  "ScheduleViewMode": true,
+  "SharePath": "D:\\GreenPower\\Data",
+  "RelayModeOff": true,
+  "QgatePath": "",
+  "BalancingPath": "C:\\GreenPower\\GPControl\\Config\\Balancing.xml",
+  "UseChiller": true,
+  "UseTempSocTable": false,
+  "ModuleNo": "",
+  "UseBalancing": false,
+}
